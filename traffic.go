@@ -2,18 +2,12 @@ package main
 
 import (
 	"image/color"
-	"log"
 
 	"github.com/EngoEngine/ecs"
 	"github.com/EngoEngine/engo"
 	"github.com/EngoEngine/engo/common"
+	"github.com/h8gi/TrafficManager/systems"
 )
-
-type City struct {
-	ecs.BasicEntity
-	common.RenderComponent
-	common.SpaceComponent
-}
 
 type myScene struct{}
 
@@ -29,44 +23,24 @@ func (*myScene) Preload() {
 // Setup is called before the main loop starts. It allows you
 // to add entities and systems to your Scene.
 func (*myScene) Setup(u engo.Updater) {
-
+	world, _ := u.(*ecs.World)
+	engo.Input.RegisterButton("AddCity", engo.KeyN)
 	common.SetBackground(color.White)
 
-	world, _ := u.(*ecs.World)
 	world.AddSystem(&common.RenderSystem{})
+	world.AddSystem(&common.MouseSystem{})
+	kbs := common.NewKeyboardScroller(400, engo.DefaultHorizontalAxis, engo.DefaultVerticalAxis)
+	world.AddSystem(kbs)
 
-	// instantiate the city entity
-	city := City{BasicEntity: ecs.NewBasic()}
-	city.SpaceComponent = common.SpaceComponent{
-		Position: engo.Point{X: 10, Y: 10},
-		Width:    303,
-		Height:   641,
-	}
-
-	// get preloaded texture image
-	texture, err := common.LoadedSprite("textures/city.png")
-	if err != nil {
-		log.Println("Unable to load texture: " + err.Error())
-	}
-
-	city.RenderComponent = common.RenderComponent{
-		Drawable: texture,
-		Scale:    engo.Point{X: 1, Y: 1},
-	}
-
-	for _, system := range world.Systems() {
-		switch sys := system.(type) {
-		case *common.RenderSystem:
-			sys.Add(&city.BasicEntity, &city.RenderComponent, &city.SpaceComponent)
-		}
-	}
+	world.AddSystem(&systems.CityBuildingSystem{})
 }
 
 func main() {
 	opts := engo.RunOptions{
-		Title:  "Hello World",
-		Width:  400,
-		Height: 400,
+		Title:          "Hello World",
+		Width:          400,
+		Height:         400,
+		StandardInputs: true,
 	}
 	engo.Run(opts, &myScene{})
 }
